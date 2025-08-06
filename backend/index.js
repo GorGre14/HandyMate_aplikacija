@@ -8,7 +8,7 @@ const app = express();
 // Configure CORS for production
 const corsOptions = {
   origin: process.env.NODE_ENV === 'production' 
-    ? ['http://88.200.63.148', 'http://88.200.63.148:3000', 'http://88.200.63.148:80', 'http://localhost:3000'] // University server
+    ? /^https:\/\/.*\.vercel\.app$/ // Allow any vercel.app subdomain
     : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:5000'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -75,8 +75,12 @@ app.get('/api/test-db', (req, res) => {
 
 const PORT = process.env.PORT || 5000;
 
-// Start server (traditional deployment)
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`API available at: http://localhost:${PORT}/api/test`);
-});
+// For local development
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
+
+// Export for Vercel
+module.exports = app;
