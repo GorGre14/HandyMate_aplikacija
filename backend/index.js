@@ -8,7 +8,7 @@ const app = express();
 // Configure CORS for production
 const corsOptions = {
   origin: process.env.NODE_ENV === 'production' 
-    ? ['https://handy-mate-aplikacija.vercel.app']
+    ? /^https:\/\/.*\.vercel\.app$/ // Allow any vercel.app subdomain
     : ['http://localhost:3000', 'http://localhost:3001'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
