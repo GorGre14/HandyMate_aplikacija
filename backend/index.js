@@ -41,6 +41,37 @@ app.get('/api/test', (req, res) => {
   res.json({ message: 'Backend deluje in je povezan z bazo!' });
 });
 
+// Database connection test endpoint
+app.get('/api/test-db', (req, res) => {
+  console.log('Testing database connection...');
+  console.log('Environment variables:', {
+    DB_HOST: process.env.DB_HOST,
+    DB_USER: process.env.DB_USER,
+    DB_DATABASE: process.env.DB_DATABASE,
+    NODE_ENV: process.env.NODE_ENV
+  });
+
+  // Test simple query
+  db.query('SELECT 1 as test', (err, results) => {
+    if (err) {
+      console.error('Database connection error:', err);
+      return res.status(500).json({ 
+        success: false, 
+        message: 'Database connection failed',
+        error: err.message,
+        code: err.code
+      });
+    }
+    
+    console.log('Database connection successful:', results);
+    res.json({ 
+      success: true, 
+      message: 'Database connection working!',
+      result: results[0]
+    });
+  });
+});
+
 
 const PORT = process.env.PORT || 5000;
 
