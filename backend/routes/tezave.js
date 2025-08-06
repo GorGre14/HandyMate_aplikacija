@@ -56,7 +56,7 @@ router.get('/:id', (req, res) => {
     if (results.rows.length === 0) {
       return res.status(404).json({ message: 'Težava ni bila najdena' });
     }
-    res.status(200).json(results.rows[0]);  
+    res.status(200).json(results.rows[0]);
   });
 });
 
