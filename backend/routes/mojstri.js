@@ -1,30 +1,24 @@
 const express = require('express');
 const router = express.Router();
-const mysql = require('mysql2');
+const { Pool } = require('pg');
 require('dotenv').config();
 
-const db = mysql.createPool({
-  host: process.env.DB_HOST,
-  port: process.env.DB_PORT || 3306,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASS,
-  database: process.env.DB_DATABASE,
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-  acquireTimeout: 60000,
-  timeout: 60000
+const db = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false
+  }
 });
 
 
 router.get('/', (req, res) => {
-  const sql = 'SELECT ime, priimek, gsm, email, strokovnosti FROM uporabniki WHERE tip_racuna = "mojster"';
-  db.query(sql, (err, result) => {
+  const sql = 'SELECT ime, priimek, gsm, email, strokovnosti FROM uporabniki WHERE tip_racuna = $1';
+  db.query(sql, ['mojster'], (err, result) => {
     if (err) {
       console.error('Napaka pri poizvedbi za mojstre:', err);
       return res.status(500).json({ error: 'Napaka pri pridobivanju mojstrov' });
     }
-    res.json(result);
+    res.json(result.rows);
   });
 });
 

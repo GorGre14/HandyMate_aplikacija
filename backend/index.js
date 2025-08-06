@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const mysql = require('mysql2');
+const { Pool } = require('pg');
 require('dotenv').config();
 
 const app = express();
@@ -19,17 +19,11 @@ app.use(cors(corsOptions));
 app.use(express.json());
 
 
-const db = mysql.createPool({
-  host: process.env.DB_HOST,
-  port: process.env.DB_PORT || 3306,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASS,
-  database: process.env.DB_DATABASE,
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-  acquireTimeout: 60000,
-  timeout: 60000
+const db = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false
+  }
 });
 
 
@@ -57,7 +51,7 @@ app.get('/api/test-db', (req, res) => {
     NODE_ENV: process.env.NODE_ENV
   });
 
-  // Test simple query
+  // Test simple query for PostgreSQL
   db.query('SELECT 1 as test', (err, results) => {
     if (err) {
       console.error('Database connection error:', err);
@@ -69,11 +63,11 @@ app.get('/api/test-db', (req, res) => {
       });
     }
     
-    console.log('Database connection successful:', results);
+    console.log('Database connection successful:', results.rows);
     res.json({ 
       success: true, 
-      message: 'Database connection working!',
-      result: results[0]
+      message: 'PostgreSQL connection working!',
+      result: results.rows[0]
     });
   });
 });

@@ -1,19 +1,13 @@
 const express = require('express');
 const router = express.Router();
-const mysql = require('mysql2');
+const { Pool } = require('pg');
 require('dotenv').config();
 
-const db = mysql.createPool({
-  host: process.env.DB_HOST,
-  port: process.env.DB_PORT || 3306,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASS,
-  database: process.env.DB_DATABASE,
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-  acquireTimeout: 60000,
-  timeout: 60000
+const db = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false
+  }
 });
 
 router.post('/register', (req, res) => {
@@ -25,12 +19,12 @@ router.post('/register', (req, res) => {
   });
   
   const { ime, priimek, gsm, email, geslo, tip_racuna, strokovnosti } = req.body;
-  const sql = 'INSERT INTO uporabniki (ime, priimek, gsm, email, geslo, tip_racuna, strokovnosti) VALUES (?, ?, ?, ?, ?, ?, ?)';
+  const sql = 'INSERT INTO uporabniki (ime, priimek, gsm, email, geslo, tip_racuna, strokovnosti) VALUES ($1, $2, $3, $4, $5, $6, $7)';
 
   db.query(sql, [ime, priimek, gsm, email, geslo, tip_racuna, JSON.stringify(strokovnosti)], (err, result) => {
     if (err) {
       console.error('Database error details:', err);
-      if (err.code === 'ER_DUP_ENTRY') {
+      if (err.code === '23505') { // PostgreSQL unique violation
         return res.status(409).json({ message: 'Email že obstaja' });
       }
       return res.status(500).json({ message: 'Napaka pri registraciji: ' + err.message });
@@ -42,19 +36,18 @@ router.post('/register', (req, res) => {
 router.post('/login', (req, res) => {
   const { email, geslo } = req.body;
 
-  const sql = 'SELECT id, ime, priimek, tip_racuna FROM uporabniki WHERE email = ? AND geslo = ?';
+  const sql = 'SELECT id, ime, priimek, tip_racuna FROM uporabniki WHERE email = $1 AND geslo = $2';
   db.query(sql, [email, geslo], (err, result) => {
     if (err) {
       console.error('Napaka pri poizvedbi za login:', err);
-      return res.status(500).send('Napaka na strežniku.');
+      return res.status(500).json({ message: 'Napaka na strežniku.' });
     }
 
-    if (result.length === 0) {
-      return res.status(401).send('Napačen email ali geslo.');
+    if (result.rows.length === 0) {
+      return res.status(401).json({ message: 'Napačen email ali geslo.' });
     }
 
-    
-    const user = result[0];
+    const user = result.rows[0];
     res.json(user);
   });
 });
