@@ -3,27 +3,37 @@ const router = express.Router();
 const mysql = require('mysql2');
 require('dotenv').config();
 
-const db = mysql.createConnection({
+const db = mysql.createPool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
   password: process.env.DB_PASS,
   database: process.env.DB_DATABASE,
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
 });
 
 router.post('/register', (req, res) => {
+  console.log('Register endpoint hit with data:', req.body);
+  console.log('Environment variables:', {
+    DB_HOST: process.env.DB_HOST,
+    DB_USER: process.env.DB_USER,
+    DB_DATABASE: process.env.DB_DATABASE
+  });
+  
   const { ime, priimek, gsm, email, geslo, tip_racuna, strokovnosti } = req.body;
   const sql = 'INSERT INTO uporabniki (ime, priimek, gsm, email, geslo, tip_racuna, strokovnosti) VALUES (?, ?, ?, ?, ?, ?, ?)';
 
   db.query(sql, [ime, priimek, gsm, email, geslo, tip_racuna, JSON.stringify(strokovnosti)], (err, result) => {
     if (err) {
+      console.error('Database error details:', err);
       if (err.code === 'ER_DUP_ENTRY') {
-        return res.status(409).send('Email že obstaja');
+        return res.status(409).json({ message: 'Email že obstaja' });
       }
-      console.error('Napaka pri registraciji:', err);
-      return res.status(500).send('Napaka pri registraciji.');
+      return res.status(500).json({ message: 'Napaka pri registraciji: ' + err.message });
     }
 
-    res.status(200).send('Registracija uspešna');
+    res.status(200).json({ message: 'Registracija uspešna' });
   });
 });
 router.post('/login', (req, res) => {
